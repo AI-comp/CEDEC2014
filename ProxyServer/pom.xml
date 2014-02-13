@@ -8,9 +8,9 @@
   <packaging>jar</packaging>
 
   <name>ProxyServer</name>
-  <url>https://github.com/AI-comp/CEDEC-AI-CHALLENGE-2014</url>
+  <url>https://github.com/AI-comp/CEDEC2014</url>
   <description>.</description>
-  <inceptionYear>2013</inceptionYear>
+  <inceptionYear>2014</inceptionYear>
 
   <!-- General settings -->
   <properties>
