@@ -23,8 +23,9 @@ http://maven.apache.org/download.cgi
 http://www.eclipse.org/downloads/
 1. Run Eclipse
 1. Menu > Help > Install new software
-1. Install Scala IDE (For Scala 2.9.x) on Eclipse (Copy & Paste the following URL)
-http://download.eclipse.org/modeling/tmf/xtext/updates/composite/releases/
+1. Install Xtend plugin on Eclipse (Copy & Paste the following URL)
+http://download.eclipse.org/modeling/tmf/xtext/updates/composite/releases/  
+Note that you can see the language specification of Xtend here (https://www.eclipse.org/xtend/).
 
 
 ### Import the ProxyServer Project into Your Eclipse Workspace
