@@ -7,6 +7,8 @@ https://docs.google.com/presentation/d/1qPkDdKSJC96pJ3jnn36UiV8LYhu1dpjTUWUi4-Fj
 
 ## How to Play
 
+To test our contest platform, this platform has a sample game (rock-paper-scissors).
+
 1. Open the following URL
 http://www.ai-comp.net/CEDEC2014/GameEngine/
 1. Run ProxyServer if you want to use URL instead of Code
