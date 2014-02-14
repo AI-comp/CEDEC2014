@@ -1,6 +1,10 @@
 CEDEC AI CHALLENGE 2014
 =======================
 
+## Architecture
+
+https://docs.google.com/presentation/d/1qPkDdKSJC96pJ3jnn36UiV8LYhu1dpjTUWUi4-Fj7mw/edit?usp=sharing
+
 ## How to Play
 
 1. Open the following URL
