@@ -36,4 +36,4 @@ Note that you can see the language specification of Xtend here (https://www.ecli
 1. Finish
 1. Right click the imported project > Maven > Update Project Configuration > OK
 
-Note that when you modify ```resources``` directory, you should build with Maven entering ```mvn clean package``` at the ```CEDEC2014``` directory.
+Note that when you modify the ```resources``` directory, you should build with Maven entering ```mvn clean package``` in the ```CEDEC2014``` directory.
