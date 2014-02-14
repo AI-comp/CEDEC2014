@@ -3,27 +3,29 @@
 <title>JavaScript Sample</title>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
 <script type="text/javascript" src="main.js"></script>
+<script type="text/javascript" src="worker.js"></script>
 </head>
 <body>
 <form>
 <input type="button" value="Battle" id="start" />
+<br />
+<input type="radio" name="ai0" value="url"> URL
+<input type="radio" name="ai0" value="code" checked> Code
+<br />
+<input type="text" value="http://localhost:8080/" id="url0"><br />
+<textarea id="code0" cols=200 rows=10>
+function advance(context) {
+	//while(1) {} // buggy
+	return "Scissor";
+}
+</textarea>
 <br />
 <input type="radio" name="ai1" value="url"> URL
 <input type="radio" name="ai1" value="code" checked> Code
 <br />
 <input type="text" value="http://localhost:8080/" id="url1"><br />
 <textarea id="code1" cols=200 rows=10>
-function program(history) {
-	return "Scissor";
-}
-</textarea>
-<br />
-<input type="radio" name="ai2" value="url"> URL
-<input type="radio" name="ai2" value="code" checked> Code
-<br />
-<input type="text" value="http://localhost:8080/" id="url2"><br />
-<textarea id="code2" cols=200 rows=10>
-function program(history) {
+function advance(context) {
 	return "Stone";
 }
 </textarea>

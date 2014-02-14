@@ -1,28 +1,44 @@
-history = []
+MAX_AI_TIME = 10 * 1000
+MAX_AJAX_TIME = MAX_AI_TIME + 1000 * 2
+MAX_WAIT_TIME = MAX_AI_TIME + 1000
+context = {}
+commands = []
+players = []
+time = null
+isStarting = false
+isLiving = false
 
-class EvalPlayer
-	constructor: (code, @pid) ->
-		eval(code)
-		@command = program
-		@id = null
-		@cmd = null
+# TODO: Use inheritance to reduce code clones
+class CodePlayer
+	constructor: (@code, @pid) ->
+		@worker = new Worker('worker.js')
+		@result = null
+		@worker.addEventListener 'message', (e) =>
+			switch e.data.type
+				when 'initialized'
+					console.log("engine received initialized: " + JSON.stringify(e.data, null, 2))
+				when 'advanced'
+					console.log("engine received advanced: " + JSON.stringify(e.data, null, 2))
+			@result = e.data
+		, false
 
 	start: ->
-		dfd = $.Deferred()
-		dfd.resolve [ { 'id': 'code' } ]
-		dfd.promise()
+		@result = null
+		@worker.postMessage { type: 'initialize', code: @code }
 
-	advance: ->
-		time = new Date().getTime()
-		@cmd = @command(history).toLowerCase()
-		time = new Date().getTime() - time
-		$('#debug').append('advance: ' + time + ": " + @cmd + '<br>')
+	advance: (context) ->
+		@result = null
+		@worker.postMessage { type: 'advance', context: context }
 
-class Player
+	terminate: () ->
+		@worker.terminate()
+
+class WebAppPlayer
 	constructor: (@url, @pid) ->
 		@lags = []
-		@id = null
-		@cmd = null
+		@sessionId = null
+		@result = null
+		@time = null
 
 	ajax: (data) ->
 		console.log('ajax: ' + JSON.stringify(data, null, 2))
@@ -31,79 +47,150 @@ class Player
 			url: @url,
 			data: data,
 			dataType: 'jsonp',
-			timeout: 10000,
+			timeout: MAX_AJAX_TIME,
 			jsonpCallback: 'jsonpCallback' + @pid
 		}
 
 	start: ->
 		console.log('start')
+		@result = null
 		@ajax { type: 'start' }
+			.then (json) =>
+				@sessionId = json.sessionId
+				@result = {}
+			, (json) =>
+				@result = {}
 
-	advance: ->
-		@cmd = null
-		@ping()
+	advance: (context) ->
+		@result = null
+		@ping(context)
 
-	ping: ->
-		time = new Date().getTime()
-		@ajax { type: 'ping', id: @id }
-			.done (json) => # => keeps @ as one out of this closure
-				@lags.push(new Date().getTime() - time)
+	ping: (context) ->
+		@time = new Date().getTime()
+		@ajax { type: 'ping', sessionId: @sessionId }
+			.then (json) => # => keeps @ outer's this
+				@lags.push(new Date().getTime() - @time)
 				if (@lags.length > 10)
 					@lags.shift()
 				$('#time').text(JSON.stringify(@lags, null, 2))
-				setTimeout( =>
-					@command()
-				, 1000)
+				@advanceBody(context)
+			, (json) =>
+				@result = {}
 
-	command: ->
-		time = new Date().getTime()
-		@ajax { type: 'advance', id: @id, context: { history: history } }
-			.done (json) => # => keeps @ as one out of this closure
-				time = new Date().getTime() - time
+	advanceBody: (context) ->
+		@time = new Date().getTime()
+		@ajax { type: 'advance', sessionId: @sessionId, context: context }
+			.then (json) => # => keeps @ outer's this
+				@time = new Date().getTime() - @time
 				if @lags.length > 0
-					time = time - @lags.reduce((a, b) -> a + b) / @lags.length
-				@cmd = json.cmd.toLowerCase()
-				switch @cmd
-					when 'scissor' then console.log('Scissor')
-					when 'paper' then console.log('Paper')
-					when 'stone' then console.log('Stone')
-					else console.log('Unknown')
-				$('#debug').append('advance: ' + time + ": " + JSON.stringify(json, null, 2) + '<br>')
+					@time = @time - @lags.reduce((a, b) -> a + b) / @lags.length
+				console.log('advance: ' + @time + ": " + JSON.stringify(json, null, 2))
+				@result = { command: json.command, time: @time }
+			, (json) =>
+				@result = {}
+
+	terminate: () ->
 
 $ ->
 	console.log('ready')
 	$('#start').click ->
-		console.log('start')
-		p1 = createPlayer(1)
-		p2 = createPlayer(2)
-		$.when(p1.start(), p2.start())
-			.then (json1, json2) -> # => keeps @ as one out of this closure
-				console.log('started')
-				p1.id = json1[0].id
-				p2.id = json2[0].id
-				p1.advance()
-				p2.advance()
-				process(p1, p2)
+		if not isStarting
+			isStarting = true
+			for player in players
+				player.terminate()
+			start()
 
 createPlayer = (index) ->
 	if $('input[name="ai' + index + '"]:checked').val() == 'url'
-		new Player($('#url' + index).val(), index)
+		new WebAppPlayer($('#url' + index).val(), index)
 	else
-		new EvalPlayer($('#code' + index).val(), index)
+		new CodePlayer($('#code' + index).val(), index)		
 
-process = (p1, p2) ->
-	console.log('process')
-	if p1.cmd && p2.cmd
-		history.push [p1.cmd, p2.cmd]
-		if (p1.cmd == 'scissor' && p2.cmd == 'paper') || (p1.cmd == 'paper' && p2.cmd == 'stone') || (p1.cmd == 'stone' && p2.cmd == 'scissor')
-			$('#log').append('Player 1 wins !')
-		else if (p1.cmd == 'scissor' && p2.cmd == 'stone') || (p1.cmd == 'paper' && p2.cmd == 'scissor') || (p1.cmd == 'stone' && p2.cmd == 'paper')
-			$('#log').append('Player 2 wins !')
-		else
-			$('#log').append('Draw !')
-		$('#log').append('<br>')
-		p1.advance()
-		p2.advance()
-	setTimeout( ->
-		process(p1, p2)
-	, 1000)
+isFinished = () ->
+	for player in players
+		if player.result == null
+			return false
+	true
+
+currentPlayer = () ->
+	players[context.playerIndex]
+
+advanceTurn = () ->
+	context.playerIndex = context.playerIndex + 1
+	if context.playerIndex == players.length
+		context.playerIndex = 0
+		context.turn = context.turn + 1
+	time = new Date().getTime()
+	currentPlayer().advance(context)
+
+start = () ->
+	if not isLiving
+		console.log('start')
+		$('#log').text('')
+		$('#debug').text('')
+
+		context = { turn: 1, playerIndex: -1, history: [] }
+		commands = []
+		players = []
+		for i in [0 ... 2]
+			players.push(createPlayer(i))
+			players[i].start()
+
+		isLiving = true
+		isStarting = false
+		initialize()
+	else
+		setTimeout( ->
+			start()
+		, 1000)
+
+initialize = () ->
+	console.log('initialize')
+	if isFinished()
+		advanceTurn()
+		advance()
+	else if not isStarting
+		setTimeout( ->
+			initialize()
+		, 1000)
+	else
+		isLiving = false
+		console.log('terminate')
+
+normalize = (command) ->
+	switch command.toLowerCase()
+		when 'scissor' then 'sc'
+		when 'paper' then 'pa'
+		when 'stone' then 'st'
+		else 'un'
+
+advance = () ->
+	currentTime = new Date().getTime()
+	console.log('advance: ' + currentTime + ', ' + time + ', ' + (currentTime - time))
+	timeOver = currentTime - time > MAX_WAIT_TIME
+	if currentPlayer().result != null || timeOver
+		$('#debug').append('advance: ' + JSON.stringify(currentPlayer().result, null, 2) + '<br />')
+		ret = currentPlayer().result
+		cmd = if not timeOver && ret.time <= MAX_AI_TIME then ret.command else ''
+		commands.push normalize(cmd)
+		if commands.length == players.length
+			$('#debug').append('advance: ' + JSON.stringify(commands, null, 2) + '<br />')
+			c1 = commands[0]
+			c2 = commands[1]
+			if (c1 == 'sc' && c2 == 'pa') || (c1 == 'pa' && c2 == 'st') || (c1 == 'st' && c2 == 'sc') || (c1 != 'un' && c2 == 'un')
+				$('#log').append('Player 1 wins !')
+			else if (c1 == 'sc' && c2 == 'st') || (c1 == 'pa' && c2 == 'sc') || (c1 == 'st' && c2 == 'pa') || (c1 == 'un' && c2 != 'un')
+				$('#log').append('Player 2 wins !')
+			else
+				$('#log').append('Draw !')
+			$('#log').append('<br>')
+			context.history.push commands
+			commands = []
+		advanceTurn()
+	if not isStarting && context.turn <= 5
+		setTimeout( ->
+			advance()
+		, 1000)
+	else
+		isLiving = false
+		console.log('terminate')

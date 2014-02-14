@@ -8,7 +8,7 @@ import java.util.HashMap
 import java.util.List
 
 class HelloServer extends NanoHTTPD {
-	static var id = 0
+	static var sessionId = 0
 	static var port = 8080
 	static val players = new HashMap<String, Player>()
 	static val gson = new Gson();
@@ -18,8 +18,8 @@ class HelloServer extends NanoHTTPD {
 	}
 
 	@Synchronized def static nextId() {
-		id = id + 1
-		id.toString
+		sessionId = sessionId + 1
+		sessionId.toString
 	}
 
 	override serve(NanoHTTPD.IHTTPSession session) {
@@ -33,24 +33,24 @@ class HelloServer extends NanoHTTPD {
 		val type = params.get("type")
 		switch type {
 			case "start": {
-				val id = nextId()
-				players.put(id, new Player())
-				data.put("id", id)
+				val sessionId = nextId()
+				players.put(sessionId, new Player())
+				data.put("sessionId", sessionId)
 			}
 			case "ping": {
 			}
 			case "advance": {
-				val id = params.get("id")
+				val sessionId = params.get("sessionId")
 				val ctx = gson.fromJson(params.get("context"), typeof(Context))
-				System.out.println(id)
-				data.put("cmd", players.get(id).advance(ctx))
+				System.out.println(sessionId)
+				data.put("command", players.get(sessionId).advance(ctx))
 			}
 		}
 
 		val json = gson.toJson(data)
-		System.out.println(type + ": " + json)
 		var jsonp = funcName + "(" + json + ");";
-		new NanoHTTPD.Response(jsonp)
+		System.out.println(jsonp)
+		new NanoHTTPD.Response(NanoHTTPD.Response.Status.OK, "application/javascript", jsonp)
 	}
 
 	def static main(String[] args) {
@@ -66,5 +66,7 @@ class HelloServer extends NanoHTTPD {
 }
 
 class Context {
+	int turn
+	int playerIndex
 	List<List<String>> history
 }
