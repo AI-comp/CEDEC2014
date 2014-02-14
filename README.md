@@ -19,7 +19,7 @@ http://www.ai-comp.net/CEDEC2014/GameEngine/
 1. Install Maven 3
 http://maven.apache.org/download.cgi
 1. Install Eclipse
-  * Eclipse IDE for Java Developers (*not Standard*) Kepler (4.3)
+  * Eclipse IDE for Java Developers (*not Standard*) Kepler (4.3.1)
 http://www.eclipse.org/downloads/
 1. Run Eclipse
 1. Menu > Help > Install new software
